@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>世界之门 · 管理后台</title>
+<style>
+:root{
+  --bg:#000;--card:#1c1c1e;--card2:#2c2c2e;
+  --line:rgba(255,255,255,.08);--txt:#fff;--dim:#8e8e93;--dim2:#636366;
+  --gold:#e9c37c;--ok:#30d158;--err:#ff453a;--blue:#0a84ff;
+  --radius:16px;--radius2:12px;--radius3:8px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;overflow-y:auto;
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased}
+#stars{position:fixed;inset:0;z-index:0;opacity:.5}
+.admin-wrap{position:relative;z-index:2;max-width:720px;margin:0 auto;padding:30px 18px 60px}
+.admin-wrap h2{margin:0 0 2px;font-size:22px;font-weight:600}
+.admin-wrap .hint{margin:0 0 24px;font-size:12px;color:var(--dim)}
+.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:18px;margin-bottom:14px}
+.card h3{margin:0 0 12px;font-size:13px;letter-spacing:.1em;color:var(--dim);font-weight:500;text-transform:uppercase}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12px;color:var(--dim);margin-bottom:8px;letter-spacing:.04em;font-weight:500}
+input,textarea,select{width:100%;padding:13px 16px;border-radius:var(--radius2);border:1px solid var(--line);
+  background:var(--card2);color:var(--txt);font-size:15px;outline:none;font-family:inherit}
+input:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(233,195,124,.1)}
+textarea{resize:vertical;line-height:1.8}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.row>*{flex:1;min-width:110px}
+.btn{padding:12px 20px;border-radius:var(--radius2);font-size:14px;font-weight:600;cursor:pointer;
+  background:var(--txt);color:var(--bg);border:none;letter-spacing:.04em;transition:.2s}
+.btn:hover{opacity:.85}
+.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--txt)}
+.btn.sm{padding:7px 13px;font-size:12px;border-radius:var(--radius3)}
+.cover-msg{min-height:20px;margin-top:12px;font-size:12.5px;color:var(--err)}
+.cover-msg.ok{color:var(--ok)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--dim);font-weight:500;font-size:11px;letter-spacing:.06em}
+td.code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em}
+.st{padding:2px 7px;border-radius:20px;font-size:10.5px}
+.st.a{background:rgba(48,209,88,.12);color:var(--ok)}
+.st.b{background:rgba(10,132,255,.12);color:var(--blue)}
+.st.c{background:rgba(255,69,58,.12);color:var(--err)}
+.st.d{background:rgba(142,142,147,.12);color:var(--dim)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:4px 8px}
+.empty{padding:28px;text-align:center;color:var(--dim);font-size:13px}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(16px);z-index:99;
+  padding:10px 18px;border-radius:20px;font-size:13px;background:var(--card2);border:1px solid var(--line);
+  opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.back-link{display:inline-block;margin-bottom:20px;font-size:12px;color:var(--dim);text-decoration:none}
+.back-link:hover{color:var(--txt)}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<div class="admin-wrap">
+  <a href="index.html" class="back-link">← 返回前台</a>
+  <h2>管理后台</h2>
+  <p class="hint">卡密 · 世界书 · 账户</p>
+
+  <div id="loginBox" class="card">
+    <h3>登录</h3>
+    <div class="field"><label>账号</label><input id="adUser" autocomplete="off"></div>
+    <div class="field"><label>密码</label><input id="adPass" type="password"></div>
+    <button class="btn" style="width:100%" id="adLogin">登录</button>
+    <div class="cover-msg" id="adMsg"></div>
+  </div>
+
+  <div id="adminMain" style="display:none">
+    <div class="card"><h3>生成卡密</h3>
+      <div class="row"><input id="gNum" type="number" min="1" max="200" value="10" placeholder="数量">
+      <input id="gDays" type="number" min="0" max="3650" value="30" placeholder="天数(0=永久)"></div>
+      <button class="btn" style="width:100%" id="gBtn">生成</button>
+      <div class="field" style="margin-top:14px"><label>新卡密（可复制）</label><textarea id="gOut" rows="4" readonly></textarea></div>
+    </div>
+
+    <div class="card"><h3>卡密管理</h3>
+      <div class="row"><input id="sKey" placeholder="搜索卡密 / 玩家名"><select id="sFilter">
+        <option value="">全部状态</option><option value="unused">未使用</option><option value="active">使用中</option>
+        <option value="expired">已过期</option><option value="disabled">已禁用</option></select></div>
+      <div class="tbl-wrap"><table id="tbl"><thead><tr><th>卡密</th><th>状态</th><th>玩家</th><th>激活</th><th>到期</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="card"><h3>世界书（前台只读展示，并作为叙事素材）</h3>
+      <textarea id="bookText" rows="8" placeholder="写入世界观补充、禁忌、地理、历史…"></textarea>
+      <button class="btn" style="width:100%;margin-top:12px" id="bookSave">保存世界书</button>
+    </div>
+
+    <div class="card"><h3>修改管理员账户</h3>
+      <div class="row"><input id="pUser" placeholder="新账号"><input id="pPass" type="password" placeholder="新密码"></div>
+      <button class="btn" style="width:100%" id="pSave">保存</button>
+    </div>
+
+    <button class="btn ghost" style="width:100%" id="adExit">退出登录</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========== 基础 ========== */
+const $=s=>document.querySelector(s);
+const K={cards:'km_cards',admin:'km_admin',book:'km_worldbook'};
+const DB={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2000);}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ========== 星空 ========== */
+(function(){
+  const c=$('#stars'),x=c.getContext('2d');let w,h,st=[];
+  function rs(){w=c.width=innerWidth;h=c.height=innerHeight;st=[];
+    for(let i=0;i<80;i++)st.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1+.1,
+      a:Math.random(),s:Math.random()*.006+.001,c:Math.random()>.9?'#e9c37c':'#8e8e93'});}
+  rs();addEventListener('resize',rs);
+  (function loop(){x.clearRect(0,0,w,h);x.fillStyle='#000';x.fillRect(0,0,w,h);
+    st.forEach(p=>{p.a+=p.s;const o=.15+Math.abs(Math.sin(p.a))*.4;
+      x.globalAlpha=o;x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill();});
+    x.globalAlpha=1;requestAnimationFrame(loop);})();
+})();
+
+/* ========== 卡密 ========== */
+const CS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function mkCode(){let s='';for(let i=0;i<16;i++){if(i&&i%4===0)s+='-';s+=CS[Math.floor(Math.random()*CS.length)];}return s;}
+function getCards(){return DB.get(K.cards,[]);}
+function setCards(c){DB.set(K.cards,c);}
+function cardState(c){
+  if(c.disabled)return{cls:'d',txt:'已禁用'};
+  if(!c.used)return{cls:'b',txt:'未使用'};
+  if(c.expireAt&&Date.now()>c.expireAt)return{cls:'c',txt:'已过期'};
+  return{cls:'a',txt:c.expireAt?'剩'+Math.ceil((c.expireAt-Date.now())/864e5)+'天':'永久'};
+}
+function fmt(d){if(!d)return'—';const t=new Date(d);const p=n=>String(n).padStart(2,'0');
+  return t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate())+' '+p(t.getHours())+':'+p(t.getMinutes());}
+
+/* ========== 登录 ========== */
+if(!DB.get(K.admin,null))DB.set(K.admin,{user:'admin',pass:'admin888'});
+$('#adLogin').addEventListener('click',()=>{
+  const a=DB.get(K.admin),m=$('#adMsg');m.className='cover-msg';
+  if($('#adUser').value===a.user&&$('#adPass').value===a.pass){
+    $('#loginBox').style.display='none';$('#adminMain').style.display='block';
+    $('#bookText').value=DB.get(K.book,'');renderTable();
+  }else{m.textContent='账号或密码错误';}
+});
+$('#adExit').addEventListener('click',()=>{
+  $('#loginBox').style.display='block';$('#adminMain').style.display='none';
+  $('#adUser').value='';$('#adPass').value='';
+});
+
+/* ========== 生成卡密 ========== */
+$('#gBtn').addEventListener('click',()=>{
+  const n=Math.max(1,Math.min(200,parseInt($('#gNum').value,10)||1));
+  const d=Math.max(0,parseInt($('#gDays').value,10)||0);
+  const cards=getCards(),out=[];
+  for(let i=0;i<n;i++){const c={code:mkCode(),days:d,createdAt:Date.now(),used:false,activatedAt:null,expireAt:null,bindName:'',disabled:false};cards.push(c);out.push(c.code);}
+  setCards(cards);$('#gOut').value=out.join('\n');renderTable();toast('已生成 '+n+' 张卡密');
+});
+
+/* ========== 卡密列表 ========== */
+function renderTable(){
+  const kw=$('#sKey').value.trim().toLowerCase(),f=$('#sFilter').value;
+  const cards=getCards().filter(c=>{
+    const s=cardState(c);
+    const okF=!f||(f==='unused'&&s.cls==='b')||(f==='active'&&s.cls==='a')||(f==='expired'&&s.cls==='c')||(f==='disabled'&&s.cls==='d');
+    return okF&&(!kw||c.code.toLowerCase().includes(kw)||(c.bindName||'').toLowerCase().includes(kw));
+  });
+  const tb=$('#tbl tbody');
+  if(!cards.length){tb.innerHTML='<tr><td colspan="6"><div class="empty">暂无卡密</div></td></tr>';return;}
+  tb.innerHTML=cards.slice().reverse().map(c=>{
+    const s=cardState(c);
+    return `<tr><td class="code">${c.code}</td><td><span class="st ${s.cls}">${s.txt}</span></td>
+      <td>${esc(c.bindName||'—')}</td><td>${fmt(c.activatedAt)}</td><td>${fmt(c.expireAt)}</td>
+      <td><button class="btn ghost sm" data-act="dis" data-c="${c.code}">${c.disabled?'启用':'禁用'}</button>
+      <button class="btn ghost sm" data-act="del" data-c="${c.code}">删除</button></td></tr>`;}).join('');
+  tb.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    const code=b.dataset.c;let cards=getCards();
+    if(b.dataset.act==='del'){if(!confirm('确定删除该卡密？'))return;cards=cards.filter(x=>x.code!==code);}
+    else{const c=cards.find(x=>x.code===code);if(c)c.disabled=!c.disabled;}
+    setCards(cards);renderTable();}));
+}
+$('#sKey').addEventListener('input',renderTable);
+$('#sFilter').addEventListener('change',renderTable);
+
+/* ========== 世界书 ========== */
+$('#bookSave').addEventListener('click',()=>{DB.set(K.book,$('#bookText').value);toast('世界书已保存');});
+
+/* ========== 管理员账户 ========== */
+$('#pSave').addEventListener('click',()=>{
+  const u=$('#pUser').value.trim(),p=$('#pPass').value;
+  if(!u&&!p){toast('请输入新账号或新密码');return;}
+  const a=DB.get(K.admin);DB.set(K.admin,{user:u||a.user,pass:p||a.pass});
+  $('#pUser').value='';$('#pPass').value='';toast('账户已更新');
+});
+</script>
+</body>
+</html>
